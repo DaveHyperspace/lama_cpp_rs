@@ -1,5 +1,10 @@
 //! This is an translation of simple.cpp in llama.cpp using llama-cpp-2.
-#![allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss
+)]
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -30,6 +35,45 @@ struct Args {
 }
 
 fn main() -> Result<()> {
+    unsafe {
+        println!(
+            r#"
+AVX = {}
+AVX_VNNI = {}
+AVX2 = {}
+AVX512 = {}
+AVX512_VBMI = {}
+AVX512_VNNI = {}
+FMA = {}
+NEON = {}
+ARM_FMA = {}
+F16C = {}
+FP16_VA = {}
+BLAS = {}
+SSE3 = {}
+SSSE3 = {}
+VSX = {}
+MATMUL_INT8 = {}
+"#,
+            llama_cpp_sys_2::ggml_cpu_has_avx(),
+            llama_cpp_sys_2::ggml_cpu_has_avx_vnni(),
+            llama_cpp_sys_2::ggml_cpu_has_avx2(),
+            llama_cpp_sys_2::ggml_cpu_has_avx512(),
+            llama_cpp_sys_2::ggml_cpu_has_avx512_vbmi(),
+            llama_cpp_sys_2::ggml_cpu_has_avx512_vnni(),
+            llama_cpp_sys_2::ggml_cpu_has_fma(),
+            llama_cpp_sys_2::ggml_cpu_has_neon(),
+            llama_cpp_sys_2::ggml_cpu_has_arm_fma(),
+            llama_cpp_sys_2::ggml_cpu_has_f16c(),
+            llama_cpp_sys_2::ggml_cpu_has_fp16_va(),
+            llama_cpp_sys_2::ggml_cpu_has_blas(),
+            llama_cpp_sys_2::ggml_cpu_has_sse3(),
+            llama_cpp_sys_2::ggml_cpu_has_ssse3(),
+            llama_cpp_sys_2::ggml_cpu_has_vsx(),
+            llama_cpp_sys_2::ggml_cpu_has_matmul_int8(),
+        )
+    }
+
     let params = Args::parse();
 
     // init LLM

@@ -8,7 +8,6 @@ use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::model::params::LlamaModelParams;
 use llama_cpp_2::model::LlamaModel;
 use llama_cpp_2::token::data_array::LlamaTokenDataArray;
-use pprof::criterion::{Output, PProfProfiler};
 use std::str::FromStr;
 
 fn sample(
@@ -43,10 +42,3 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 }
-
-criterion_group!(
-    name = benches;
-    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets = criterion_benchmark
-);
-criterion_main!(benches);

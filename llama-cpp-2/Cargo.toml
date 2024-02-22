@@ -16,7 +16,6 @@ tracing = { workspace = true }
 [dev-dependencies]
 hf-hub = { workspace = true }
 criterion = { workspace = true }
-pprof = { workspace = true, features = ["criterion", "flamegraph"] }
 
 # used in examples
 clap = { version = "4.5.0", features = ["derive"] }
