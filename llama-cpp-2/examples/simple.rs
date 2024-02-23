@@ -29,7 +29,6 @@ struct Args {
     #[clap(default_value = "Hello my name is")]
     prompt: String,
     /// Disable offloading layers to the gpu
-    #[cfg(feature = "cublas")]
     #[clap(long)]
     disable_gpu: bool,
 }
@@ -80,18 +79,21 @@ MATMUL_INT8 = {}
     let backend = LlamaBackend::init()?;
 
     // total length of the sequence including the prompt
-    let n_len: i32 = 32;
+    let n_len: i32 = 2000;
 
+    let has_gpu = cfg!(any(feature = "cublas", feature = "metal"));
     // offload all layers to the gpu
     let model_params = {
-        #[cfg(feature = "cublas")]
-        if !params.disable_gpu {
-            LlamaModelParams::default().with_n_gpu_layers(1000)
+        dbg!(has_gpu, params.disable_gpu);
+        if has_gpu {
+            if params.disable_gpu {
+                LlamaModelParams::default().with_n_gpu_layers(0)
+            } else {
+                LlamaModelParams::default().with_n_gpu_layers(1000)
+            }
         } else {
             LlamaModelParams::default()
         }
-        #[cfg(not(feature = "cublas"))]
-        LlamaModelParams::default()
     };
 
     let model = LlamaModel::load_from_file(&backend, params.model_path, &model_params)
