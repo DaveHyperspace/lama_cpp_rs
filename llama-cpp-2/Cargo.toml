@@ -27,6 +27,7 @@ harness = false
 
 [features]
 cublas = ["llama-cpp-sys-2/cublas"]
+metal = ["llama-cpp-sys-2/metal"]
 
 [lints]
 workspace = true

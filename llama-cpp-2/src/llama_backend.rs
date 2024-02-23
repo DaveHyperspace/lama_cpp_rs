@@ -43,7 +43,7 @@ impl LlamaBackend {
     #[tracing::instrument(skip_all)]
     pub fn init() -> crate::Result<LlamaBackend> {
         Self::mark_init()?;
-        unsafe { llama_cpp_sys_2::llama_backend_init(false) }
+        unsafe { llama_cpp_sys_2::llama_backend_init() }
         Ok(LlamaBackend {})
     }
 
@@ -61,7 +61,7 @@ impl LlamaBackend {
     #[tracing::instrument(skip_all)]
     pub fn init_numa() -> crate::Result<LlamaBackend> {
         Self::mark_init()?;
-        unsafe { llama_cpp_sys_2::llama_backend_init(true) }
+        unsafe { llama_cpp_sys_2::llama_backend_init() }
         Ok(LlamaBackend {})
     }
 }

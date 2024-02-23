@@ -6,6 +6,9 @@ fn main() {
     println!("cargo:rerun-if-changed=llama.cpp");
 
     let cublas_enabled = env::var("CARGO_FEATURE_CUBLAS").is_ok();
+    let metal_enabled = cfg!(feature = "metal");
+    println!("cargo:warning=Cublas enabled = {}", cublas_enabled);
+    println!("cargo:warning=Metal enabled = {}", metal_enabled);
 
     if !Path::new("llama.cpp/ggml.c").exists() {
         panic!("llama.cpp seems to not be populated, try running `git submodule update --init --recursive` to init.")
@@ -17,6 +20,12 @@ fn main() {
     } else {
         None
     };
+    let mut ggml_metal = if metal_enabled {
+        Some((cc::Build::new(), cc::Build::new()))
+    } else {
+        None
+    };
+
     let mut llama_cpp = cc::Build::new();
 
     ggml.cpp(false);
@@ -35,18 +44,6 @@ fn main() {
 
         println!("cargo:rustc-link-search=native=/usr/local/cuda/lib64");
 
-        if cfg!(target_arch = "aarch64") {
-            ggml_cuda
-                .flag_if_supported("-mfp16-format=ieee")
-                .flag_if_supported("-mno-unaligned-access");
-            llama_cpp
-                .flag_if_supported("-mfp16-format=ieee")
-                .flag_if_supported("-mno-unaligned-access");
-            ggml_cuda
-                .flag_if_supported("-mfp16-format=ieee")
-                .flag_if_supported("-mno-unaligned-access");
-        }
-
         ggml_cuda
             .cuda(true)
             .flag("-arch=all")
@@ -61,6 +58,36 @@ fn main() {
         ggml.define("GGML_USE_CUBLAS", None);
         ggml_cuda.define("GGML_USE_CUBLAS", None);
         llama_cpp.define("GGML_USE_CUBLAS", None);
+    } else if let Some(ggml_metal) = &mut ggml_metal {
+        println!("cargo:warning=Compiling with metal");
+        for lib in ["Foundation", "Metal", "MetalKit"] {
+            println!("cargo:rustc-link-lib=framework={}", lib);
+        }
+
+        ggml_metal.0.file("llama.cpp/ggml-metal.m");
+        std::fs::write(
+            "TEMP_ASSEMBLY.s",
+            r#"
+            .section __DATA, __ggml_metallib
+            .globl _ggml_metallib_start
+            _ggml_metallib_start:
+                .incbin "llama.cpp/ggml-metal.metal"
+            .globl _ggml_metallib_end
+            _ggml_metallib_end:
+        "#,
+        )
+        .unwrap();
+        ggml_metal.1.file("TEMP_ASSEMBLY.s");
+
+        ggml.define("GGML_USE_METAL", None);
+        ggml_metal.0.define("GGML_USE_METAL", None);
+        ggml_metal.1.define("GGML_USE_METAL", None);
+        llama_cpp.define("GGML_USE_METAL", None);
+
+        ggml.define("GGML_METAL_EMBED_LIBRARY", None);
+        ggml_metal.0.define("GGML_METAL_EMBED_LIBRARY", None);
+        ggml_metal.1.define("GGML_METAL_EMBED_LIBRARY", None);
+        llama_cpp.define("GGML_METAL_EMBED_LIBRARY", None);
     }
 
     ggml.flag_if_supported("-march=native")
@@ -85,6 +112,12 @@ fn main() {
     if let Some(ggml_cuda) = ggml_cuda {
         println!("compiling ggml-cuda");
         ggml_cuda.compile("ggml-cuda");
+    }
+    if let Some(ggml_metal) = ggml_metal {
+        println!("compiling ggml-metal");
+        ggml_metal.1.compile("ggml-metal-embed");
+        ggml_metal.0.compile("ggml-metal");
+        std::fs::remove_file("TEMP_ASSEMBLY.s").unwrap();
     }
 
     if cfg!(target_os = "linux") {
