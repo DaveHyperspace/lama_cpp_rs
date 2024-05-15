@@ -31,6 +31,10 @@ fn main() {
     ggml.cpp(false);
     llama_cpp.cpp(true);
 
+    if llama_cpp.get_compiler().is_like_msvc() {
+        llama_cpp.define("LLAMA_STATIC", None);
+    }
+
     // https://github.com/ggerganov/llama.cpp/blob/a836c8f534ab789b02da149fbdaf7735500bff74/Makefile#L364-L368
     if let Some(ggml_cuda) = &mut ggml_cuda {
         for lib in ["cuda", "cublas", "cudart", "cublasLt"] {
